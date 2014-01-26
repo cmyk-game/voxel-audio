@@ -110,22 +110,30 @@ exports.PositionAudio.prototype.play = function() {
     self.isPlaying = true;
 };
 
+var bufferCache = {};
 
 exports.PositionAudio.prototype.load = function(callback) {
     var self = this;
-    var request = new XMLHttpRequest();
-    request.open('GET', this.url, true);
-    request.responseType = 'arraybuffer';
+    if(bufferCache[self.url]) {
+        self.options.buffer = bufferCache[self.url];
+        self.initBuffer();
+        callback(null);
+    } else {
+        var request = new XMLHttpRequest();
+        request.open('GET', this.url, true);
+        request.responseType = 'arraybuffer';
 
-    // Decode asynchronously
-    request.onload = function() {
-        audioContext.decodeAudioData( request.response, function(buffer) {
-            self.options.buffer = buffer;
-            self.initBuffer();
-            callback(null);
-        }, function(err){callback(err);});
-    };
-    request.send();
+        // Decode asynchronously
+        request.onload = function() {
+            audioContext.decodeAudioData( request.response, function(buffer) {
+                self.options.buffer = buffer;
+                bufferCache[self.url] = buffer;
+                self.initBuffer();
+                callback(null);
+            }, function(err){callback(err);});
+        };
+        request.send();
+    }
 };
 
 
